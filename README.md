@@ -12,7 +12,6 @@ L'app interroge l'API publique [transport.opendata.ch](https://transport.opendat
 |---------|------|
 | `index.html` | App complète (HTML + CSS + JS embarqués) |
 | `manifest.json` | Manifeste PWA pour le mode standalone iOS/Android |
-| `email-visual-identity.md` | Charte graphique e-butler (référence pour le design) |
 
 ### Arrêts configurés
 
@@ -87,7 +86,7 @@ Ouvrir `index.html` dans un navigateur. L'app fonctionne immédiatement.
 1. Créer un repo GitHub
 2. Pousser `index.html` et `manifest.json`
 3. Settings > Pages > Source: Deploy from branch > `main` / `/ (root)`
-4. L'app est accessible à `https://<user>.github.io/<repo>/`
+4. L'app est accessible à `https://raging-mmxv.github.io/tpg-departures/`
 
 ### Ajout à l'écran d'accueil iPhone
 
