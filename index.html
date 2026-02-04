@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TPG Departures</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TPG">
+<meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f0f0f0" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%231a1a1a'/><text x='90' y='105' font-family='Courier New,monospace' font-size='52' font-weight='700' fill='%23ff0099' text-anchor='middle'>TPG</text></svg>">
+
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --bg-card: #1a1a1a;
+    --bg-card-header: #222;
+    --text: #e0e0e0;
+    --text-muted: #777;
+    --accent: #ff0099;
+    --delay: #ff0099;
+    --now: #32cd32;
+    --error: #ff0099;
+    --border: #333;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f0f0f0;
+      --bg-card: #f0f0f0;
+      --bg-card-header: #e0e0e0;
+      --text: #1a1a1a;
+      --text-muted: #888;
+      --border: #ccc;
+      --delay: #cc0077;
+      --error: #cc0077;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+    font-size: 13px;
+    line-height: 1.3;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-text-size-adjust: 100%;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    padding: 10px 12px 0 12px;
+    padding-top: calc(var(--safe-top) + 10px);
+  }
+
+  .header-box {
+    border-bottom: 1px solid var(--border);
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-status {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .header-status.error {
+    color: var(--error);
+  }
+
+  .btn-refresh {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 4px 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s;
+  }
+
+  .btn-refresh:active {
+    color: var(--accent);
+  }
+
+  .btn-refresh.spinning {
+    color: var(--accent);
+  }
+
+  main {
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: calc(var(--safe-bottom) + 12px);
+  }
+
+  .card {
+    background: var(--bg-card);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: var(--bg-card-header);
+    margin: 0 -2px;
+    padding: 5px 8px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-stop-name {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card-lines {
+    display: flex;
+    gap: 4px;
+  }
+
+  .line-badge {
+    font-size: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #fff;
+    display: inline-block;
+    line-height: 1.3;
+  }
+
+  .card-body {
+    padding: 0;
+  }
+
+  .departure-row {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .departure-row:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dep-line {
+    flex-shrink: 0;
+    min-width: 24px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: inherit;
+    text-align: center;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #fff;
+    line-height: 1.3;
+  }
+
+  .dep-dest {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+
+  .dep-time {
+    flex-shrink: 0;
+    text-align: right;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .dep-countdown {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .dep-countdown.now {
+    color: var(--now);
+  }
+
+  .dep-delay {
+    font-size: 11px;
+    color: var(--delay);
+    font-weight: 700;
+    min-width: 24px;
+    text-align: right;
+  }
+
+  .dep-scheduled {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .card-empty, .card-error {
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .card-error {
+    color: var(--error);
+  }
+
+  .loading-placeholder {
+    padding: 8px 0;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-box">
+    <div class="header-status" id="status">Chargement...</div>
+    <button class="btn-refresh" id="btnRefresh" aria-label="Rafraichir">[reload]</button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<script>
+const CONFIG = {
+  refreshInterval: 30000,
+  countdownInterval: 15000,
+  departuresPerStop: 15,
+  maxDeparturesPerLine: 2,
+  stops: [
+    { id: "8592900", name: "Rue du Lac", lines: ["2", "6"], directions: {
+      "2": ["Genève, Jonction", "Bernex, Cressy"],
+      "6": ["Vernier, village"],
+    }},
+    { id: "8592883", name: "Place des Eaux-Vives", lines: ["2", "6", "9", "10", "25"], directions: {
+      "2": ["Genève, Jonction", "Bernex, Cressy"],
+      "6": ["Vernier, village"],
+      "9": ["Vernier, Lignon Tours"],
+      "25": ["Genève, Jardin Botanique"],
+    }},
+    { id: "8587918", name: "CERN", lines: ["18"], directions: {
+      "18": ["Grand-Lancy, Palettes"],
+    }},
+    { id: "8587057", name: "Gare Cornavin", lines: ["6", "9", "14", "18"], directions: {
+      "6": ["Genève, Plage", "Genève-Plage"],
+      "9": ["Thônex, Belle-Terre Pl. Araire"],
+      "14": ["Meyrin, Gravière"],
+      "18": ["Meyrin, CERN", "CERN"],
+    }},
+    { id: "8587387", name: "Bel-Air", lines: ["2", "14", "18"], directions: {
+      "2": ["Genève, Plage", "Genève-Plage"],
+      "14": ["Vernier, Blandonnet"],
+      "18": ["Meyrin, CERN", "CERN"],
+    }},
+    { id: "8592854", name: "Merle d'Aubigné", lines: ["2", "6"], directions: {
+      "2": ["Genève, Jonction", "Bernex, Cressy"],
+      "6": ["Vernier, village"],
+    }},
+  ]
+};
+
+const API_BASE = "https://transport.opendata.ch/v1/stationboard";
+
+const LINE_COLORS = {
+  "2":  { bg: "#D2DB4A", fg: "#1a1a1a" },
+  "6":  { bg: "#008CBE", fg: "#fff" },
+  "9":  { bg: "#E2001D", fg: "#fff" },
+  "10": { bg: "#006E3D", fg: "#fff" },
+  "14": { bg: "#5A1E82", fg: "#fff" },
+  "18": { bg: "#B82F89", fg: "#fff" },
+  "25": { bg: "#A05909", fg: "#fff" },
+};
+
+const DEST_SHORT = {
+  "Genève, Gare Cornavin": "Cornavin",
+  "Genève, gare Cornavin": "Cornavin",
+  "Genève-Plage": "Genève Plage",
+  "Genève, Plage": "Genève Plage",
+  "Vernier, village": "Vernier Village",
+  "Genève, Carouge GE, Rondeau de Carouge": "Carouge",
+  "Carouge GE, Rondeau de Carouge": "Carouge",
+  "Meyrin, Gravière": "Meyrin Gravière",
+  "Grand-Lancy, Palettes": "Palettes",
+  "Onex, Bandol": "Bandol",
+  "Bernex, Vailly": "Vailly",
+  "CERN": "CERN",
+};
+
+let stopsData = new Map();
+let lastFetchTime = null;
+let refreshTimer = null;
+let countdownTimer = null;
+let backoffMs = 0;
+
+const app = document.getElementById("app");
+const statusEl = document.getElementById("status");
+const btnRefresh = document.getElementById("btnRefresh");
+
+function shortenDest(dest) {
+  if (DEST_SHORT[dest]) return DEST_SHORT[dest];
+  return dest
+    .replace(/^Genève, /, "")
+    .replace(/^Petit-Lancy, /, "")
+    .replace(/^Grand-Lancy, /, "")
+    .replace(/^Carouge GE, /, "")
+    .replace(/^Lancy-Pont-Rouge, /, "")
+    .replace(/^Meyrin, /, "")
+    .replace(/^Onex, /, "")
+    .replace(/^Bernex, /, "")
+    .replace(/^Vernier, /, "")
+    .replace(/^Plan-les-Ouates, /, "")
+    .replace(/^Thônex, /, "")
+    .replace(/^Chêne-Bourg, /, "")
+    .replace(/^Chêne-Bougeries, /, "");
+}
+
+function formatCountdown(diffMs) {
+  const mins = Math.floor(diffMs / 60000);
+  if (mins <= 0) return { text: "now", cssClass: "now" };
+  if (mins < 60) return { text: mins + " min", cssClass: "" };
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return { text: h + "h" + (m > 0 ? " " + m + "min" : ""), cssClass: "" };
+}
+
+function parseDeparture(entry) {
+  const lineNum = (entry.number || "").trim();
+  const category = entry.category || "";
+  const isTram = category === "T";
+  const dest = entry.to || "";
+  const scheduledStr = entry.stop?.departure;
+  const delay = entry.stop?.delay || 0;
+  const prognosisStr = entry.stop?.prognosis?.departure;
+
+  if (!scheduledStr) return null;
+
+  const scheduled = new Date(scheduledStr);
+  const realtime = prognosisStr ? new Date(prognosisStr) : new Date(scheduled.getTime() + delay * 60000);
+
+  return { lineNum, isTram, dest, scheduled, realtime, delay };
+}
+
+async function fetchStop(stop) {
+  const url = `${API_BASE}?id=${stop.id}&limit=${CONFIG.departuresPerStop}`;
+  const resp = await fetch(url);
+  if (resp.status === 429) {
+    backoffMs = Math.min((backoffMs || 5000) * 2, 120000);
+    throw new Error("Rate limited");
+  }
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  backoffMs = 0;
+  const data = await resp.json();
+  return data.stationboard || [];
+}
+
+function filterDepartures(entries, stop) {
+  const now = Date.now();
+  const lineSet = new Set(stop.lines);
+  const sorted = entries
+    .map(parseDeparture)
+    .filter(d => {
+      if (!d || !lineSet.has(d.lineNum) || d.realtime.getTime() <= now - 30000) return false;
+      const dirs = stop.directions?.[d.lineNum];
+      if (dirs && !dirs.includes(d.dest)) return false;
+      return true;
+    })
+    .sort((a, b) => a.realtime - b.realtime);
+
+  if (CONFIG.maxDeparturesPerLine) {
+    const counts = {};
+    return sorted.filter(d => {
+      counts[d.lineNum] = (counts[d.lineNum] || 0) + 1;
+      return counts[d.lineNum] <= CONFIG.maxDeparturesPerLine;
+    });
+  }
+  return sorted;
+}
+
+async function fetchAllStops() {
+  btnRefresh.textContent = "[...]";
+  btnRefresh.classList.add("spinning");
+
+  const results = await Promise.allSettled(
+    CONFIG.stops.map(async stop => {
+      const entries = await fetchStop(stop);
+      return { stop, departures: filterDepartures(entries, stop) };
+    })
+  );
+
+  const hadPreviousData = stopsData.size > 0;
+  let anyError = false;
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      stopsData.set(result.value.stop.id, {
+        stop: result.value.stop,
+        departures: result.value.departures,
+        error: null,
+      });
+    } else {
+      anyError = true;
+      const existing = stopsData.get(
+        CONFIG.stops[results.indexOf(result)]?.id
+      );
+      if (existing) {
+        existing.error = result.reason?.message || "Erreur";
+      }
+    }
+  }
+
+  lastFetchTime = new Date();
+  btnRefresh.textContent = "[reload]";
+  btnRefresh.classList.remove("spinning");
+  render();
+  updateStatus(anyError);
+}
+
+function updateStatus(hasError) {
+  if (!lastFetchTime) return;
+  const time = lastFetchTime.toLocaleTimeString("fr-CH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  if (hasError) {
+    statusEl.textContent = `Mis à jour ${time} — erreur partielle`;
+    statusEl.classList.add("error");
+  } else {
+    statusEl.textContent = `Mis à jour ${time}`;
+    statusEl.classList.remove("error");
+  }
+}
+
+function lineStyle(lineNum) {
+  const c = LINE_COLORS[lineNum];
+  if (c) return `background:${c.bg};color:${c.fg}`;
+  return `background:var(--text-muted);color:#fff`;
+}
+
+function renderDepartureRow(dep) {
+  const now = Date.now();
+  const diff = dep.realtime.getTime() - now;
+  const { text, cssClass } = formatCountdown(diff);
+  const scheduledTime = dep.scheduled.toLocaleTimeString("fr-CH", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const delayText = dep.delay > 0 ? `+${dep.delay}` : "";
+
+  return `<div class="departure-row">
+    <span class="dep-line" style="${lineStyle(dep.lineNum)}">${dep.lineNum}</span>
+    <span class="dep-dest">${shortenDest(dep.dest)}</span>
+    <div class="dep-time">
+      <span class="dep-scheduled">${scheduledTime}</span>
+      <span class="dep-delay">${delayText}</span>
+      <span class="dep-countdown ${cssClass}">${text}</span>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const now = Date.now();
+  let html = "";
+
+  for (const stop of CONFIG.stops) {
+    const data = stopsData.get(stop.id);
+
+    const lineBadges = stop.lines
+      .map(l => `<span class="line-badge" style="${lineStyle(l)}">${l}</span>`)
+      .join("");
+
+    html += `<div class="card">
+      <div class="card-header">
+        <span class="card-stop-name">${stop.name}</span>
+        <div class="card-lines">${lineBadges}</div>
+      </div>
+      <div class="card-body">`;
+
+    if (!data) {
+      html += `<div class="loading-placeholder">Chargement…</div>`;
+    } else if (data.error && !data.departures?.length) {
+      html += `<div class="card-error">${data.error}</div>`;
+    } else {
+      const active = data.departures.filter(
+        d => d.realtime.getTime() > now - 30000
+      );
+      if (active.length === 0) {
+        html += `<div class="card-empty">Aucun départ à venir</div>`;
+      } else {
+        html += active.map(renderDepartureRow).join("");
+      }
+      if (data.error) {
+        html += `<div class="card-error" style="font-size:11px;padding:4px 0;">${data.error}</div>`;
+      }
+    }
+
+    html += `</div></div>`;
+  }
+
+  app.innerHTML = html;
+}
+
+function startTimers() {
+  clearTimeout(refreshTimer);
+  clearInterval(countdownTimer);
+
+  const interval = backoffMs > 0
+    ? CONFIG.refreshInterval + backoffMs
+    : CONFIG.refreshInterval;
+
+  refreshTimer = setTimeout(async () => {
+    await fetchAllStops();
+    startTimers();
+  }, interval);
+
+  countdownTimer = setInterval(() => {
+    render();
+  }, CONFIG.countdownInterval);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    clearTimeout(refreshTimer);
+    clearInterval(countdownTimer);
+  } else {
+    fetchAllStops().then(startTimers);
+  }
+});
+
+btnRefresh.addEventListener("click", () => {
+  clearTimeout(refreshTimer);
+  fetchAllStops().then(startTimers);
+});
+
+fetchAllStops().then(startTimers);
+</script>
+
+</body>
+</html>

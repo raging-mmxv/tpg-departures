@@ -1,0 +1,16 @@
+{
+  "name": "TPG Departures",
+  "short_name": "TPG",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%231a1a2e'/><text x='90' y='105' font-family='system-ui,-apple-system,sans-serif' font-size='56' font-weight='700' fill='%23e94560' text-anchor='middle'>TPG</text></svg>",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ]
+}
